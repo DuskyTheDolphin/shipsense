@@ -1,0 +1,20 @@
+{
+  "name": "shipsense",
+  "version": "0.1.0",
+  "description": "ShipSense — a release-readiness Rovo agent for Jira. Assembles connected context (blockers, bugs, cross-team dependencies, incidents) and returns a Go / Caution / No-Go confidence call with a sourced rationale.",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "demo": "node src/demo.js",
+    "test": "node --test src/core/scoring.test.js",
+    "deploy": "forge deploy",
+    "install:app": "forge install"
+  },
+  "dependencies": {
+    "@forge/api": "latest",
+    "@forge/bridge": "latest",
+    "@forge/react": "latest",
+    "@forge/resolver": "latest",
+    "react": "^18.3.1"
+  }
+}

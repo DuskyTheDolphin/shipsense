@@ -1,0 +1,126 @@
+app:
+  runtime:
+    name: nodejs22.x
+  id: ari:cloud:ecosystem::app/9b2d18bd-47f5-4954-9731-88bd25019f90
+
+modules:
+  rovo:agent:
+    - key: shipsense-agent
+      name: ShipSense
+      description: Assesses whether a Jira release is ready to ship (Go, Caution, or
+        No-Go) from blockers, bugs, cross-team dependencies and incidents.
+      prompt: resource:agent-prompt;prompt.md
+      conversationStarters:
+        - Is the current release ready to ship?
+        - What's blocking this release?
+        - What do other teams still owe this release?
+      actions:
+        - score-release-readiness
+        - list-version-blockers
+        - get-cross-team-deps
+
+  rovo:mcp:
+    - key: shipsense-mcp
+      name: ShipSense MCP
+      tools:
+        - score-release-readiness
+        - list-version-blockers
+        - get-cross-team-deps
+
+  action:
+    - key: score-release-readiness
+      name: Score release readiness
+      function: scoreReadiness
+      actionVerb: GET
+      description: >-
+        Scores a Jira release (version) as Go, Caution, or No-Go from open
+        blockers, unresolved bugs, incomplete cross-team dependencies and
+        incidents. Use when asked whether a release is ready to ship.
+      inputs:
+        projectKey:
+          title: Project key
+          type: string
+          required: true
+          description: The Jira project key, for example "CHK".
+        versionName:
+          title: Version name
+          type: string
+          required: false
+          description: The release/version name, e.g. "Checkout v3.2". If omitted, the
+            latest unreleased version is used.
+
+    - key: list-version-blockers
+      name: List release blockers
+      function: listVersionBlockers
+      actionVerb: GET
+      description: >-
+        Lists the specific open blockers, high-priority bugs and unfinished
+        issues for a Jira release. Use when asked what is blocking a release or
+        what is left to do.
+      inputs:
+        projectKey:
+          title: Project key
+          type: string
+          required: true
+          description: The Jira project key, for example "CHK".
+        versionName:
+          title: Version name
+          type: string
+          required: false
+          description: The release/version name. Defaults to the latest unreleased version.
+
+    - key: get-cross-team-deps
+      name: Get cross-team dependencies
+      function: getCrossTeamDeps
+      actionVerb: GET
+      description: >-
+        Lists cross-team dependencies for a Jira release: work owned by other
+        teams that this release depends on, and whether each is done. Use when
+        asked about cross-team or external dependencies, or what other teams
+        still owe this release.
+      inputs:
+        projectKey:
+          title: Project key
+          type: string
+          required: true
+          description: The Jira project key.
+        versionName:
+          title: Version name
+          type: string
+          required: false
+          description: The release/version name.
+
+  function:
+    - key: scoreReadiness
+      handler: index.scoreReadiness
+    - key: listVersionBlockers
+      handler: index.listVersionBlockers
+    - key: getCrossTeamDeps
+      handler: index.getCrossTeamDeps
+    - key: panel-resolver
+      handler: resolver.handler
+
+  jira:projectPage:
+    - key: shipsense-dashboard
+      resource: main
+      resolver:
+        function: panel-resolver
+      render: native
+      title: ShipSense
+
+resources:
+  - key: main
+    path: src/frontend/index.jsx
+  - key: agent-prompt
+    path: resources
+
+permissions:
+  scopes:
+    - read:jira-work
+    - read:jira-user
+    # Teamwork Graph — one granular scope per object type queried (missing scope = silent empty):
+    - read:graph:issue:jira
+    - read:graph:issue-status:jira
+    - read:graph:team:atlassian
+    - read:graph:goal:atlassian
+    - read:graph:user:atlassian
